@@ -59,14 +59,11 @@ mkdir -p config/package-lists
 mkdir -p config/hooks/live
 mkdir -p config/includes.chroot/etc/apt/apt.conf.d
 echo 'Acquire::ForceIPv4 "true";' > config/includes.chroot/etc/apt/apt.conf.d/99force-ipv4
-# live-build also runs its own apt inside the chroot during the build itself
 mkdir -p config/archives
-echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4-lb 2>/dev/null || true
 
 echo "=== [3/6] Copying ATHEX branding files into chroot ==="
 cp -r "$BUILD_DIR"/branding/etc/*            config/includes.chroot/etc/ 2>/dev/null || true
 cp -r "$BUILD_DIR"/branding/usr/*            config/includes.chroot/usr/ 2>/dev/null || true
-cp "$BUILD_DIR"/package-lists/athex.list.chroot config/package-lists/ 2>/dev/null || true
 cp "$BUILD_DIR"/hooks/*.hook.chroot          config/hooks/live/ 2>/dev/null || true
 chmod +x config/hooks/live/*.hook.chroot 2>/dev/null || true
 chmod +x config/includes.chroot/usr/local/bin/* 2>/dev/null || true
@@ -77,7 +74,7 @@ cat > config/package-lists/athex.list.chroot <<'EOF'
 kali-desktop-xfce
 kali-linux-core
 network-manager
-network-manager-gnome
+network-manager-applet
 plymouth
 plymouth-themes
 xfce4-goodies
