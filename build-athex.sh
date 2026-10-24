@@ -39,6 +39,8 @@ lb config \
   --parent-mirror-chroot http://http.kali.org/kali \
   --parent-mirror-binary http://http.kali.org/kali \
   --apt-recommends false \
+  --security false \
+  --updates false \
   --debian-installer false \
   --binary-images iso-hybrid \
   --iso-application "ATHEX OS" \
