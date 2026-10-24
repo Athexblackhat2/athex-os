@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# ATHEX OS - About / Developer Info
+# Usage: athex-about
+
+RESET="\e[0m"
+CYAN="\e[36m"
+BOLD="\e[1m"
+
+echo -e "${CYAN}${BOLD}"
+cat <<'LOGO'
+    _   _______ _    _ _______   __
+   / \ |__   __| |  | |  ____\ \ / /
+  / _ \   | |  | |__| | |__   \ V /
+ / ___ \  | |  |  __  |  __|   > <
+/_/   \_\ |_|  |_|  |_|_____| /_/\_\
+
+LOGO
+echo -e "${RESET}"
+
+echo -e "${BOLD}ATHEX OS${RESET} — v0.1 (Genesis)"
+echo "Base system : Kali Linux (kali-rolling)"
+echo "Kernel      : $(uname -r)"
+echo "Arch        : $(uname -m)"
+echo
+echo -e "${BOLD}Developer${RESET} : ATHEX"
+echo "Built with  : live-build + Kali package repos"
+echo "Toolkit     : generic pentest suite preinstalled (nmap, metasploit,"
+echo "              hydra, john, sqlmap, gobuster, nikto, aircrack-ng,"
+echo "              hashcat, burpsuite, wireshark, tcpdump)"
+echo
+echo "Run 'neofetch' for a full hardware/system summary."

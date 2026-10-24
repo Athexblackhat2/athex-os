@@ -1,0 +1,29 @@
+// ATHEX OS boot animation (plymouth "script" renderer)
+
+Window.SetBackgroundTopColor(0.04, 0.05, 0.08);
+Window.SetBackgroundBottomColor(0.07, 0.10, 0.14);
+
+logo.image = Image("logo.png");
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetX(Window.GetWidth()  / 2 - logo.image.GetWidth()  / 2);
+logo.sprite.SetY(Window.GetHeight() / 2 - logo.image.GetHeight() / 2 - 60);
+
+// spinner frames
+for (i = 0; i < 24; i++) {
+    spinner_image[i] = Image("spinner/spin-" + (i < 10 ? "0" + i : i) + ".png");
+}
+spinner.sprite = Sprite();
+spinner.sprite.SetX(Window.GetWidth()  / 2 - 40);
+spinner.sprite.SetY(Window.GetHeight() / 2 + 140);
+
+frame = 0;
+fun refresh_callback() {
+    spinner.sprite.SetImage(spinner_image[frame]);
+    frame = (frame + 1) % 24;
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+fun message_callback(text) {
+    // optional: boot stage text could be drawn here with a Text sprite
+}
+Plymouth.SetUpdateStatusFunction(message_callback);
