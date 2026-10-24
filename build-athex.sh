@@ -32,7 +32,9 @@ lb config \
   --archive-areas "main contrib non-free non-free-firmware" \
   --parent-distribution kali-rolling \
   --parent-archive-areas "main contrib non-free non-free-firmware" \
-  --archive-mirror http://http.kali.org/kali \
+  --mirror-bootstrap http://http.kali.org/kali \
+  --mirror-chroot http://http.kali.org/kali \
+  --mirror-binary http://http.kali.org/kali \
   --parent-mirror-bootstrap http://http.kali.org/kali \
   --parent-mirror-chroot http://http.kali.org/kali \
   --parent-mirror-binary http://http.kali.org/kali \
