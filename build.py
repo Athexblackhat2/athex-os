@@ -29,10 +29,11 @@ def main():
     os.chdir(workspace)
 
     print("[*] Initializing live-build configuration...")
-    # Full purge to avoid stale Debian mirror config from previous failed builds
+    # Full purge + remove stale config (keeps bootstrap cache for speed)
     run_cmd("lb clean --purge || true")
+    run_cmd("rm -rf config || true")
 
-    # --- Kali mirrors are REQUIRED, otherwise debootstrap hits deb.debian.org and 404s ---
+    # --- Kali mirrors REQUIRED; security/updates repos DO NOT EXIST on Kali ---
     lb_config_cmd = (
         "lb config "
         "--distribution kali-rolling "
@@ -43,6 +44,8 @@ def main():
         "--mirror-bootstrap http://http.kali.org/kali "
         "--mirror-chroot http://http.kali.org/kali "
         "--mirror-binary http://http.kali.org/kali "
+        "--security false "
+        "--updates false "
         "--keyring-package kali-archive-keyring "
         "--debootstrap-options \"--include=kali-archive-keyring\" "
         "--iso-volume \"ATHEXOS\""
@@ -52,7 +55,7 @@ def main():
     # Create package list directory
     os.makedirs("config/package-lists", exist_ok=True)
 
-    print("[*] Writing package list (pen-testing tools, Tor, dev essentials)...")
+    print("[*] Writing package list...")
     packages = """
 # Desktop Environment & Essentials
 kali-desktop-xfce
@@ -78,20 +81,18 @@ aircrack-ng
 # Development
 build-essential
 """
-    # NOTE: 'code' (VS Code) is NOT in Kali repos -> removed from list.
-    # It is installed manually via .deb inside the hook below.
+    # NOTE: 'code' (VS Code) NOT in Kali repos -> installed manually in hook.
     with open("config/package-lists/athex.list.chroot", "w") as f:
         f.write(packages.strip())
 
-    # Create hooks directory for custom branding
+    # Create hooks directory
     os.makedirs("config/hooks/normal", exist_ok=True)
 
     print("[*] Creating customization hook script...")
     hook_script = """#!/bin/sh
 set -e
 
-# 1. Set Custom OS Name in os-release
-# IMPORTANT: ID_LIKE must be QUOTED, because some tools source this file as shell.
+# 1. Set Custom OS Name in os-release (ID_LIKE MUST be quoted!)
 echo "Setting Athex OS branding..."
 cat << 'EOF' > /etc/os-release
 NAME="Athex OS"
@@ -105,14 +106,14 @@ SUPPORT_URL="https://athexithouse.site.je"
 BUG_REPORT_URL="https://athexithouse.site.je"
 EOF
 
-# 2. Configure Dual Terminals (normal + root aliases)
+# 2. Configure Dual Terminals
 echo "Configuring Normal and Root terminals..."
 echo "alias root-term='sudo -i'" >> /etc/skel/.bashrc
 cat >> /root/.bashrc << 'EOF'
 alias athex-banner='echo -e "\\e[31m===================================\\n     ATHEX OS - ROOT TERMINAL      \\n===================================\\e[0m"'
 EOF
 
-# 3. Install VS Code manually via .deb (not in Kali repos)
+# 3. Install VS Code manually via .deb
 echo "Preparing VS Code..."
 wget -qO /tmp/vscode.deb https://update.code.visualstudio.com/latest/linux-deb-x64/stable || true
 if [ -s /tmp/vscode.deb ]; then
