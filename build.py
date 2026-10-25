@@ -17,35 +17,31 @@ def check_root():
 
 def main():
     check_root()
-    
+
     print("=== ATHEX OS BUILDER ===")
     print("[*] Updating system and installing dependencies...")
     run_cmd("apt update && apt install -y live-build debootstrap squashfs-tools xorriso wget curl")
 
-    # Workspace directory
     workspace = "athex_os_build"
     if not os.path.exists(workspace):
         os.makedirs(workspace)
     os.chdir(workspace)
 
     print("[*] Initializing live-build configuration...")
-    # Configure for Kali/Debian rolling architecture
-    run_cmd("lb clean")
+    run_cmd("lb clean || true")
     lb_config_cmd = (
         "lb config "
         "--distribution kali-rolling "
         "--archive-areas \"main contrib non-free non-free-firmware\" "
-        "--parent-distribution kali-rolling "
         "--architectures amd64 "
         "--linux-flavours amd64 "
         "--binary-images iso"
     )
     run_cmd(lb_config_cmd)
 
-    # Create package list directory
     os.makedirs("config/package-lists", exist_ok=True)
-    
-    print("[*] Writing package list (Penetration testing tools, Tor, VS Code dependencies)...")
+
+    print("[*] Writing package list...")
     packages = """
 # Desktop Environment & Essentials
 kali-desktop-xfce
@@ -69,15 +65,13 @@ sqlmap
 aircrack-ng
 
 # Development
-code
 build-essential
 """
     with open("config/package-lists/athex.list.chroot", "w") as f:
         f.write(packages.strip())
 
-    # Create hooks directory for custom configurations (Logos, Terminals, Branding)
     os.makedirs("config/hooks/normal", exist_ok=True)
-    
+
     print("[*] Creating customization hook script...")
     hook_script = """#!/bin/sh
 set -e
@@ -88,7 +82,7 @@ cat << 'EOF' > /etc/os-release
 NAME="Athex OS"
 VERSION="1.0 (Cyberpunk Edition)"
 ID=athex
-ID_LIKE=kali
+ID_LIKE="kali debian"
 PRETTY_NAME="Athex OS 1.0"
 ANSI_COLOR="1;31"
 HOME_URL="https://athexithouse.site.je"
@@ -96,30 +90,32 @@ SUPPORT_URL="https://athexithouse.site.je"
 BUG_REPORT_URL="https://athexithouse.site.je"
 EOF
 
-# 2. Configure Dual Terminals (Normal & Root Terminals shortcuts/aliases)
+# 2. Configure Dual Terminals
 echo "Configuring Normal and Root terminals..."
 echo "alias root-term='sudo -i'" >> /etc/skel/.bashrc
-echo "alias athex-banner='echo -e \"\\e[31m===================================\\n     ATHEX OS - ROOT TERMINAL      \\n===================================\\e[0m\"'" >> /root/.bashrc
+echo "alias athex-banner='echo -e \\"\\\\e[31m===================================\\\\n     ATHEX OS - ROOT TERMINAL      \\\\n===================================\\\\e[0m\\"'" >> /root/.bashrc
 
-# 3. Install VS Code manually via .deb if repo needs extra setup
+# 3. Install VS Code manually via .deb
 echo "Preparing VS Code..."
 wget -qO /tmp/vscode.deb https://update.code.visualstudio.com/latest/linux-deb-x64/stable || true
-dpkg -i /tmp/vscode.deb || apt-get install -f -y || true
+if [ -s /tmp/vscode.deb ]; then
+    dpkg -i /tmp/vscode.deb || apt-get install -f -y || true
+fi
 rm -f /tmp/vscode.deb
 
 echo "Athex OS customization hook completed successfully!"
 """
-    
+
     hook_path = "config/hooks/normal/99-athex-customization.hook.chroot"
     with open(hook_path, "w") as f:
         f.write(hook_script)
     run_cmd(f"chmod +x {hook_path}")
 
-    print("[*] Starting ISO Build Process (This may take 20-40 minutes depending on your internet and PC speed)...")
+    print("[*] Starting ISO Build Process (20-40 min)...")
     run_cmd("lb build")
 
-    print("\n[+] SUCCESS! Your Athex OS ISO has been built successfully.")
-    print("[+] Check the current directory for the generated .iso file.")
+    print("\\n[+] SUCCESS! Your Athex OS ISO has been built.")
+    print("[+] Check current directory for the .iso file.")
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
