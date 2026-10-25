@@ -22,26 +22,37 @@ def main():
     print("[*] Updating system and installing dependencies...")
     run_cmd("apt update && apt install -y live-build debootstrap squashfs-tools xorriso wget curl")
 
+    # Workspace directory
     workspace = "athex_os_build"
     if not os.path.exists(workspace):
         os.makedirs(workspace)
     os.chdir(workspace)
 
     print("[*] Initializing live-build configuration...")
-    run_cmd("lb clean || true")
+    # Full purge to avoid stale Debian mirror config from previous failed builds
+    run_cmd("lb clean --purge || true")
+
+    # --- Kali mirrors are REQUIRED, otherwise debootstrap hits deb.debian.org and 404s ---
     lb_config_cmd = (
         "lb config "
         "--distribution kali-rolling "
         "--archive-areas \"main contrib non-free non-free-firmware\" "
         "--architectures amd64 "
         "--linux-flavours amd64 "
-        "--binary-images iso"
+        "--binary-images iso "
+        "--mirror-bootstrap http://http.kali.org/kali "
+        "--mirror-chroot http://http.kali.org/kali "
+        "--mirror-binary http://http.kali.org/kali "
+        "--keyring-package kali-archive-keyring "
+        "--debootstrap-options \"--include=kali-archive-keyring\" "
+        "--iso-volume \"ATHEXOS\""
     )
     run_cmd(lb_config_cmd)
 
+    # Create package list directory
     os.makedirs("config/package-lists", exist_ok=True)
 
-    print("[*] Writing package list...")
+    print("[*] Writing package list (pen-testing tools, Tor, dev essentials)...")
     packages = """
 # Desktop Environment & Essentials
 kali-desktop-xfce
@@ -67,9 +78,12 @@ aircrack-ng
 # Development
 build-essential
 """
+    # NOTE: 'code' (VS Code) is NOT in Kali repos -> removed from list.
+    # It is installed manually via .deb inside the hook below.
     with open("config/package-lists/athex.list.chroot", "w") as f:
         f.write(packages.strip())
 
+    # Create hooks directory for custom branding
     os.makedirs("config/hooks/normal", exist_ok=True)
 
     print("[*] Creating customization hook script...")
@@ -77,25 +91,28 @@ build-essential
 set -e
 
 # 1. Set Custom OS Name in os-release
+# IMPORTANT: ID_LIKE must be QUOTED, because some tools source this file as shell.
 echo "Setting Athex OS branding..."
 cat << 'EOF' > /etc/os-release
 NAME="Athex OS"
 VERSION="1.0 (Cyberpunk Edition)"
 ID=athex
 ID_LIKE="kali debian"
-PRETTY_NAME="Athex OS 1.0"
+PRETTY_NAME="Athex OS 1.0 (Cyberpunk Edition)"
 ANSI_COLOR="1;31"
 HOME_URL="https://athexithouse.site.je"
 SUPPORT_URL="https://athexithouse.site.je"
 BUG_REPORT_URL="https://athexithouse.site.je"
 EOF
 
-# 2. Configure Dual Terminals
+# 2. Configure Dual Terminals (normal + root aliases)
 echo "Configuring Normal and Root terminals..."
 echo "alias root-term='sudo -i'" >> /etc/skel/.bashrc
-echo "alias athex-banner='echo -e \\"\\\\e[31m===================================\\\\n     ATHEX OS - ROOT TERMINAL      \\\\n===================================\\\\e[0m\\"'" >> /root/.bashrc
+cat >> /root/.bashrc << 'EOF'
+alias athex-banner='echo -e "\\e[31m===================================\\n     ATHEX OS - ROOT TERMINAL      \\n===================================\\e[0m"'
+EOF
 
-# 3. Install VS Code manually via .deb
+# 3. Install VS Code manually via .deb (not in Kali repos)
 echo "Preparing VS Code..."
 wget -qO /tmp/vscode.deb https://update.code.visualstudio.com/latest/linux-deb-x64/stable || true
 if [ -s /tmp/vscode.deb ]; then
